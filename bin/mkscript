@@ -1,0 +1,150 @@
+#!/bin/bash
+CMDNAME=$(basename $0)
+VERBOSE=${VERBOSE:-"false"}
+PROGPATH="$(readlink -f "$(dirname "$0")/..")" 
+TEMPLATEDIR="$PROGPATH/local/share/$CMDNAME/templates"
+SOURCE="$TEMPLATEDIR/001-base"
+USAGESTRING="Usage: $CMDNAME [ -h|--help ] [ -l ]  [ [ [ -t|--template ] | [ -f|--file ] ] template ] [ -e|--edit ] [ -r|--remove ] [ SCRIPTNAME | TEMPLATE ]"
+[[ "${VERBOSE}" = true ]] && set -o verbose
+
+function showHelp {
+	echo -e "$USAGESTRING\n"
+	cat <<- EOF | column -t -s '&'
+	& -h|--help & show this help and exit
+	& -t|--template template & select a template to use (default $(basename $SOURCE))
+	& -f|--file file & select file as template to use
+	& -e|--edit & edit TEMPLATE . Create a new one if it does not exist. You can also use -t
+	& -r|--remove & remove TEMPLATE
+	& -l|--list & show a list of avaiable templates and their index and exit
+	EOF
+	echo -e "\nTEMPLATE can be either the name of the template or the index associated to it."
+	exit 0
+}
+
+function die {
+	echo "$@" 1>&2
+	echo "$USAGESTRING" 1>&2
+	exit 1
+}
+
+ARGUMENTS=$(getopt -o "hlf:t:er" -l "help,list,template:,file:,edit:,remove:" -n "$CMDNAME" -- "$@")
+[[ "$?" != "0" ]] && exit 1
+eval set -- "$ARGUMENTS"
+CHOISE="script"
+while [[ "$#" -gt "0" ]]; do
+	case "$1" in
+		-h|--help)
+			showHelp
+			;;
+		-l|--list)
+			echo "ID - Name" | column -t -s '-'
+			ls -1 "$TEMPLATEDIR" | sed 's|^0*\([1-9][0-9]*\)-\(.*\)$| \1 - \2|' | column -t -s '-'
+			exit 0
+			;;
+		-t|--template)
+			[[ -z "$2" ]] && die "Missing template name/index after -t"
+			TEMPLATE="$2"
+			if [[ -z "${TEMPLATE##[0-9]*}" ]]; then
+				TEMPLATE=$(find "$TEMPLATEDIR" -name "*$TEMPLATE-*" -printf "%f" -quit)
+			else
+				TEMPLATE=$(find "$TEMPLATEDIR" -name "*-$TEMPLATE" -printf "%f" -quit)
+			fi
+			[[ -z "$TEMPLATE" ]] && die "Invalid template name/index"
+			SOURCE="$TEMPLATEDIR/$TEMPLATE"
+			shift 2
+			;;
+		-f|--file)
+			if [[ -r "$2" ]] && file -biL "$2" | grep -q "^text/";then
+				SOURCE=$(realpath "$2")
+				shift 2
+			else
+				die "Could no read $(basename $2) (either does not exists or is not a text/readable file)"
+			fi
+			;;
+		-e|--edit)
+			CHOISE="edit"
+			shift
+			;;
+		-r|--remove)
+			CHOISE="remove"
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			die "Bad Arguments"
+			;;
+	esac
+done
+
+[[ "$#" -ne "1" ]] && die "Invalid/Missing scriptname parameter"
+FILE="$1"
+
+# Interrupting verbose here because we'll be not able to disable it later due to the exec calls
+[[ "$VERBOSE" = "true" ]] && set +o verbose
+case "$CHOISE" in
+	script)
+		[[ -f "$FILE" ]] && die "File already exists"
+		cp "$SOURCE" "$FILE"
+		chmod +x "$FILE"
+		exec vim "${FILE}" '+4'
+		;;
+	edit)
+		if [[ -z "${FILE##[0-9]*}" ]]; then
+			EDITFILE=$(find "$TEMPLATEDIR" -name "*$FILE-*" -printf "%f" -quit)
+			[[ -z "$EDITFILE" ]] && die "no file exists matching that index"
+		else
+			EDITFILE=$(find "$TEMPLATEDIR" -name "*-$FILE" -printf "%f" -quit)
+			if [[ -z "$EDITFILE" ]]; then
+				# Get the next highter number avaiable to make our new template
+				# We also need to remove the initial zeros because bash considers numbers
+				# that begin with zero as octal and thus numbers like 08 09 are considered erros
+				NEDIT="$(( $(ls -1 "$TEMPLATEDIR" | sed -n '$ s|^0*\([1-9][0-9]*\)-.*$|\1|p') + 1 ))"
+				# Why the 3 !? Are you really going to create more than 1000 templates !?
+				# Are you mad !?
+				NZEROS=$(( 3 - ${#NEDIT} ))
+				# imba hack... the %.0s flag is meant to do nothing, just be there to pick up
+				# arguments. Then, if bash gets more arguments than it has format specifiers,
+				# it will simply print out multiple copies, grabbing as many as it needs
+				(( NZEROS > 0 )) && NEDIT="$(eval "printf '0%0.s' {1..$NZEROS}")${NEDIT}"
+				EDITFILE="${NEDIT}-${FILE}"
+			fi
+		fi
+		FILE="${TEMPLATEDIR}/${EDITFILE}"
+		[[ ( ! -f "$FILE" ) && ( -O "$TEMPLATEDIR" || "$EUID" = "0" ) ]] && cp "$SOURCE" "$FILE"
+		if [[ -O "$FILE" ]]; then
+			exec vim "${FILE}" '+4'
+		else
+			exec view "${FILE}" '+4'
+		fi
+		;;
+	remove)
+		if [[ -z "${FILE##[0-9]*}" ]]; then
+			EDITFILE=$(find "$TEMPLATEDIR" -name "*$FILE-*" -printf "%f" -quit)
+		else
+			EDITFILE=$(find "$TEMPLATEDIR" -name "*-$FILE" -printf "%f" -quit)
+		fi
+		[[ -z "$EDITFILE" ]] && die "no file exists matching that name/index"
+		FILE="${TEMPLATEDIR}/${EDITFILE}"
+		[[ -O "$FILE" && -O "$TEMPLATEDIR" ]] || die "File doesn't exists or you can't remove it"
+		rm -f "${FILE}"
+		INDEXES=$(ls -1 "$TEMPLATEDIR" | sed 's|^0*\([1-9][0-9]*\)-.*$|\1|' | xargs)
+		#echo "INDEXES=$INDEXES"
+		INDEX=1
+		for index in $INDEXES; do
+			if [[ "$index" != "$INDEX" ]]; then
+				OLDFILE=$(find "$TEMPLATEDIR" -name "*$index-*" -printf "%f" -quit)
+				NZEROS=$(( 3 - ${#INDEX} ))
+				(( NZEROS > 0 )) && NORMINDEX="$(eval "printf '0%0.s' {1..$NZEROS}")${INDEX}"
+				#echo mv "$OLDFILE" "$NORMINDEX${OLDFILE#[0-9]*-}"
+				mv "$OLDFILE" "$NORMINDEX-${OLDFILE#[0-9]*-}"
+			fi
+			(( ++INDEX ))
+		done
+		;;
+	*)
+		die "Bad Arguments"
+		;;
+esac

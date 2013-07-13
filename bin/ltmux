@@ -1,0 +1,38 @@
+#!/bin/bash
+
+function die {
+	echo "$@" 1>&2
+	echo "Usage: ${PROGNAME} command [ options ]" 1>&2
+	exit 1
+}
+
+
+PROGPATH="$(readlink -f "$(dirname "$0")/..")"
+PROGNAME="$(basename $0)"
+COMMAND=""
+LTMUX_PATH="${PROGPATH}/local/share/${PROGNAME}/bin"
+[[ "$#" -eq "0" ]] && die "Missing Command"
+if [[ "$1" = "-D" || "$1" = "--debug" ]]; then
+	export TMUXCMD="tmux -L debug -f $HOME/.tmux.conf.debug"
+	shift
+else
+	export	TMUXCMD="tmux"
+fi
+for scriptname in $(ls -1 "${LTMUX_PATH}" | xargs); do
+	#echo $scriptname $1
+	if [[ "$scriptname" = "$1" ]]; then
+		shift
+		COMMAND="$scriptname"
+		break
+	fi
+done
+
+if [[ -n "${COMMAND}" ]]; then
+	#[[ -n "$TMUX" ]] || die "$PROGNAME $COMMAND can only be used inside a tmux session"
+	export PATH="${LTMUX_PATH}:${PATH}"
+	exec "${LTMUX_PATH}/${COMMAND}" "$@"
+else
+	# Using eval here because we meed the first argument of exec to be only the name of the
+	# program with no additional arguments
+	exec $(eval echo $TMUXCMD) "$@"
+fi

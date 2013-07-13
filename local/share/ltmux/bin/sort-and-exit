@@ -1,0 +1,41 @@
+#!/bin/bash
+
+DELETING_WIN=$(${TMUXCMD} display -p "#I")
+SESSION=$(${TMUXCMD} display -p "#S")
+# We remove the metadata stored for this pane (if present)
+#rm -f $(get-metadata-filename)
+# if the window still has panes after this one closes then there is no need to continue
+[[ $(${TMUXCMD} list-panes -t "$SESSION:$DELETING_WIN" | wc -l) -gt "1" ]] && exit
+# Since the window is now surely going to be removed we delete metadata os the window (if present)
+#rm -f $(get-metadata-filename -w -t "$SESSION:$DELETING_WIN")
+# Move to the last window
+${TMUXCMD} last-window -t $SESSION 
+# Get the id window of the last window of the session
+LAST_WIN=$(${TMUXCMD} list-windows -t "$SESSION" | sed -n -e  '$ s|^\([0-9]*\):.*$|\1|p')
+# If the window we're going to eliminate is already the last one there is no point in
+# moving it to the next position so we skipt if
+if (( DELETING_WIN != LAST_WIN )); then
+	move-window -d -s "${SESSION}:${DELETING_WIN}" -t "${SESSION}:$(( LAST_WIN + 1 ))"
+fi
+# Get the id of the window we're in ( after the last-window command )
+CURRENT_WIN=$(${TMUXCMD} display -t "$SESSION" -p "#I")
+# Put all the windows Identifiers on a space separated line
+WININDEXES=$(${TMUXCMD} list-windows -t "$SESSION" | sed 's|\([0-9]*\):.*|\1|' | xargs)
+INDEX=1
+NEW_LAST_WIN=$OLD_LAST_WIN
+# In this circle basically we evautate of each window in $WININDEXES if it should be moved to fill an empty spot
+for winindex in $WININDEXES; do
+	if (( winindex != INDEX )); then
+		#echo "change $winindex -> $INDEX"
+		# Do a not detached move only when the window we're processing is the current one
+		# this avoid some screen flickering
+		if (( CURRENT_WIN == winindex )); then
+			move-window -s "$SESSION:${winindex}" -t "$SESSION:${INDEX}"
+		else
+			move-window -d -s "$SESSION:${winindex}" -t "$SESSION:${INDEX}"
+		fi
+	fi
+	# We need to fix Windows Title color aswell
+	color-window-title -t "$SESSION:$INDEX"
+	(( ++INDEX ))
+done

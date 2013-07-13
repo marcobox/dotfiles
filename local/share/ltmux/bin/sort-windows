@@ -1,0 +1,42 @@
+#!/bin/bash
+if [[ "$1" = "-t" || "$#" -eq "2" ]]; then
+	SESSION="$2"
+elif [[ "$#" -eq "0" ]]; then
+	SESSION=$(${TMUXCMD} display -p "#S")
+	# Strip Session variable of any existent : at the end of the word
+	SESSION="${SESSION%:}"
+else
+	echo "Bad Parameters" 2>&1
+	echo "Usage: ltmux $(basename $0) [ -t target ]" 2>&1
+	exit 1
+fi
+CURRENT_WIN=$(${TMUXCMD} display -t "$SESSION" -p "#I")
+# We save the previous window index
+WININDEXES=$(${TMUXCMD} list-windows -t "$SESSION" | sed 's|\([0-9]*\):.*|\1|' | xargs)
+OLD_LAST_WIN=$(${TMUXCMD} display -p -t "$SESSION:!" "#I" 2> /dev/null)
+NEW_LAST_WIN="$OLD_LAST_WIN"
+#echo $WININDEXES > /home/marcobox/test.txt
+#echo "OLD_LAST_WIN=$OLD_LAST_WIN"
+#echo "NEW_LAST_WIN=$NEW_LAST_WIN"
+INDEX=1
+for winindex in $WININDEXES; do
+	if (( winindex != INDEX )); then
+		#echo "change $winindex -> $INDEX"
+		if (( CURRENT_WIN == winindex )); then
+			move-window -s "$SESSION:${winindex}" -t "$SESSION:${INDEX}"
+		else
+			move-window -d -s "$SESSION:${winindex}" -t "$SESSION:${INDEX}"
+		fi
+		if (( OLD_LAST_WIN == winindex )); then
+			NEW_LAST_WIN="$INDEX"
+		fi
+	fi
+	# This one is not striclty needed ( since move-window does it aswell) but may help
+	# fixing other errors
+	color-window-title -t "$SESSION:${INDEX}"
+	(( ++INDEX ))
+done
+if (( OLD_LAST_WIN != NEW_LAST_WIN )); then
+	${TMUXCMD} select-window -t "$SESSION:${NEW_LAST_WIN}"
+	${TMUXCMD} last-window
+fi

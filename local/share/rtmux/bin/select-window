@@ -1,0 +1,81 @@
+#!/bin/bash
+VERBOSE=${VERBOSE:-"false"}
+CMDNAME="rtmux $(basename $0)"
+USAGESTRING="Usage: $CMDNAME [ -h|--help ] [ -T|--target ] [ -D ] [command]"
+DEBUG=""
+
+[[ "$VERBOSE" = "true" ]] && set -o verbose
+
+function showHelp {
+	echo -e "$USAGESTRING\n"
+	cat <<- EOF | column -t -s '&'
+	& -h|--help & show this help and exit
+	& -T|--target & choose target window in the form of session:window@hostname
+	& -D|--debug & open the session on the ssh client using debug mode
+	EOF
+	echo -e "\nOther options are the same of 'tmux select-window' and they'll be passed to it (to the local tmux)"
+	echo "Command will be passed to the remote window if it it's a new window"
+	exit 0
+}
+
+function die {
+	echo "$@" 2>&1
+	echo "$USAGESTRING" 2>&1
+	exit 1
+}
+
+ARGUMENTS=$(getopt -o "hDT:" -l "help,debug,target:" -n "$CMDNAME" -- "$@")
+eval set -- "$ARGUMENTS"
+while [[ "$#" -gt "0" ]]; do
+	case "$1" in
+		-h|--help)
+			showHelp
+			;;
+		-T|--target)
+			if [[ -n "${2##*@*}" ]]; then
+				SHOSTNAME="$2"
+				SESSION="base"
+				NWIN=""
+			else
+				SHOSTNAME=${2##*@}
+				TARGET="${2%@*}"
+				if [[ -z "${TARGET##*:*}" ]]; then
+					SESSION="${TARGET%:*}"
+					NWIN=${TARGET##*:}
+				else
+					SESSION="$TARGET"
+					NWIN=""
+				fi
+			fi
+			shift 2
+			;;
+		-D|--debug)
+			DEBUG="-D"
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			die "Bad Arguments"
+			;;
+	esac
+done
+
+#echo "SHOSTNAME=$SHOSTNAME"
+#echo "TARGET=$TARGET"
+#echo "SESSION=$SESSION"
+#echo "NWIN=$NWIN"
+
+if [[ -z "$NWIN" ]]; then
+	#echo "ssh $SHOSTNAME /usr/local/bin/remses $DEBUG -P $SESSION $@"
+	RTARGET=$(ssh "$SHOSTNAME" "/usr/local/bin/remses $DEBUG -P $SESSION $@")
+else
+	RTARGET="$SESSION:$NWIN"
+fi
+#echo "RTARGET=$RTARGET"
+WINNAME="rtmux-$RTARGET@$SHOSTNAME"
+ltmux new-window -n "$WINNAME" "ssh $SHOSTNAME -t '/usr/local/bin/remses $DEBUG $RTARGET $@'; ltmux sort-and-exit"
+
+[[ "$VERBOSE" = "true" ]] && set +o verbose

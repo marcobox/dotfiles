@@ -1,0 +1,76 @@
+#!/bin/bash
+CMDNAME="ltmux $(basename $0)"
+# We get the pid of our tmux server
+SERVERPID=${TMUX#*,}
+SERVERPID=${SERVERPID%,*}
+TEMPDIR="/tmp"
+VERBOSE=${VERBOSE:-"false"}
+USAGESTRING="Usage: ${CMDNAME} [ -h | --help] [ [ -s | --session ] | [ -w | --window ] ] [ [ -t | --target] target ]"
+function showHelp {
+	echo "$USAGESTRING"
+	cat <<- EOF | column -t -s \&
+			
+	& -h|--help & show this help
+	& -s|--session & get file name of session metadata of target
+	& -w|--window & get file name of window metadata of target
+	& -t|--target target & get metadata of target pane ( or window or session if -w or -s are used). If omitted it refers to current pane
+	EOF
+	exit
+}
+function die {
+	echo "$@" 2>&1
+	echo "$USAGESTRING" 2>&1
+	exit 1
+}
+[[ "$VERBOSE" = "true" ]] && set -o verbose
+# the format of the file will be SESSION.WINDOWID.PANEID
+#echo "$@"  > "/home/marcobox/test.txt"
+ARGUMENTS=$(getopt -o "hswft:" -l "help,session,window,target:" -n "$CMDNAME" -- "$@")
+eval set -- "$ARGUMENTS"
+#echo "$ARGUMENTS" >> "/home/marcobox/test.txt" 
+FILESTRING="#D"
+TARGET=""
+while [[ "$#" -gt "0" ]]; do
+#	echo $1 >> "/home/marcobox/test.txt"
+	case "$1" in
+		-h|--help)
+			showHelp
+			;;
+		-w|--window)
+			if [[ -n "$FILESTRING" ]]; then
+				die "Cannot use -w and -s a the same time"
+			fi
+			FILESTRING="#S-#I"
+			shift
+			;;
+		-s|--session)
+			FILESTRING="#Ss"
+			shift
+			;;
+		-t|--target)
+			TARGET="$2"				
+			shift 2
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			die "Bad parameters"
+			;;
+	esac
+done
+
+if [[ "$#" -gt "0" ]]; then
+	die "Invalid arguments"
+fi
+if [[ -n "$TARGET" ]]; then
+	DESTFILE=$(${TMUXCMD} display -t "$TARGET" -p "$FILESTRING")
+else
+	DESTFILE=$(${TMUXCMD} display -p "$FILESTRING")
+fi
+DESTDIR="${TEMPDIR}/ltmux-metadata-${SERVERPID}"
+DESTFILE="$DESTDIR/${DESTFILE#%}"
+echo "$DESTFILE"
+[[ "$VERBOSE" = "true" ]] && set +o verbose
+exit 0

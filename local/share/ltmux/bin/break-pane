@@ -1,0 +1,67 @@
+#!/bin/bash
+VERBOSE=${VERBOSE:-"false"}
+CMDNAME="ltmux $(basename $0)"
+# We get the pid of our ${TMUXCMD} server
+function die {
+	echo "$@" 2>&1
+	echo "Usage: ${CMDNAME} [ -d ][ -t target ]" 2>&1
+	exit 1
+}
+[[ "$VERBOSE" = "true" ]] && set -o verbose
+DETACH="false"
+ARGUMENTS=$(getopt -o ":dt:" -l "detach,target:" -n "$CMDNAME" -- "$@")
+TARGET=""
+eval set -- "$ARGUMENTS"
+while [[ "$#" -gt "0" ]]; do
+	case "$1" in
+		-d|--detach)
+			DETACH="true"
+			shift
+			;;
+		-t|--target)
+			if [[ -n "$2" ]]; then
+				TARGET=$(${TMUXCMD} display -t "$2" -p "#D")
+				shift 2
+			else
+				die "Missing target"
+			fi
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			die "Bad Parameters"
+			;;
+	esac
+done
+
+[[ -n "$TARGET" ]] || TARGET=$(${TMUXCMD} display -p "#D")
+WINID=$(${TMUXCMD} display -t "$TARGET" -p "#I")
+SESSION=$(${TMUXCMD} display -t "$TARGET" -p "#S")
+PPANE_ID=$(( $(${TMUXCMD} display -t "$TARGET" -p "#P") -1 ))
+PANE_ID=""
+if (( PPANE_ID < 0 )); then
+	PANE_ID=1
+else
+	PANE_ID="$PPANE_ID"
+fi
+PANE_TARGET=$(${TMUXCMD} display -t "$SESSION:$WINID.$PANE_ID" -p "#D" )
+(( PPANE_ID < 0 )) && PANE_TARGET="-${PANE_TARGET}"
+# Get the layout of the window before we breake the TARGET pane so we can restore it later
+LAYOUT=$(${TMUXCMD} list-windows -t "$SESSION" | sed -n '/^'"$WINID"':[[:blank:]]/ s|^.*[[:blank:]]*\[layout[[:blank:]]*\(.*\)\].*|\1|p')
+if [[ "$DETACH" = "true" ]]; then
+	${TMUXCMD} break-pane -d -t "$TARGET" || exit
+else
+	${TMUXCMD} break-pane -t "$TARGET" || exit
+fi
+LIST_PANES=$(${TMUXCMD} list-panes -t "$SESSION:$WINID" | sed 's|^.*[[:blank:]]*\(%[[:digit:]]*\)[[:blank:]]*\((active)\)\{0,1\}$|\1|' | xargs)
+# sort-window is needed to fix colors after a break-pane
+sort-windows
+#echo "TARGET=$TARGET"
+#echo "PANE_TARGET=$PANE_TARGET"
+#echo "LAYOUT=$LAYOUT"
+#echo "LIST_PANES=$LIST_PANES"
+set-metadata -t $TARGET "LIST_PANES=$LIST_PANES" "PANE_TARGET=$PANE_TARGET" "LAYOUT=$LAYOUT"
+[[ "$VERBOSE" = "true" ]] && set +o verbose
+exit 0

@@ -1,0 +1,114 @@
+#!/bin/bash
+VERBOSE=${VERBOSE:-"false"}
+CMDNAME="ltmux $(basename $0)"
+USAGECMD="Usage $CMDNAME [ [ -h | --help ] | -w | -s ] [ -t target ] VARIABLE[=VALUE] [VARIABLE[=VALUE]] ..."
+function die {
+	echo "$@" 2>&1
+	echo "$USAGECMD" 2>&1
+	exit 1
+}
+
+function showHelp {
+	echo "$USAGECMD"
+	cat <<- EOF | column -s \& -t
+			
+	& -h|--help & show this help
+	& -s|--session & get file name of session metadata of target
+	& -w|--window & get file name of window metadata of target
+	& -t|--target target & get metadata of target pane ( or window or session if -w or -s are used ). If omitted it refers to current pane
+	EOF
+	echo -e "\nVariables are added/modified with the format VARIABLE=VALUE. if you want to remove a variable type VARIABLE without a value"
+exit 0
+}
+
+[[ "$VERBOSE" = "true" ]] && set -o verbose
+
+
+ARGUMENTS=$(getopt -o "hswt" -l "help,session,window,target" -n "$CMDNAME" -- "$@")
+eval set -- "$ARGUMENTS"
+
+WINOPT=""
+TARGET=""
+SESSOPT=""
+while [[ "$#" -gt "0" ]]; do
+	case $1 in
+		-h|--help)
+			showHelp
+			;;
+		-w|--window)
+			[[ -n "$SESSOPT" ]] && die "Can't use -w and -s at the same time"
+			WINOPT="-w"
+			shift
+			;;
+		-s|--session)
+			[[ -n "$WINOPT" ]] && die "Can't use -w and -s at the same time"
+			SESSOPT="-s"
+			shift
+			;;
+		-t|--target)
+			TARGET="-t $2"
+			shift 2
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			die "Bad input parameters"
+			;;
+	esac
+done
+
+[[ "$#" -gt "0" ]] || die "Missing Parameters"
+DESTFILE=$(get-metadata-filename $WINOPT $SESSOPT $TARGET)
+(( $? == 0 )) || die "Bad input parameters"
+SEDCMD=""
+#DESTFILE="$HOME/test.txt"
+for variable in "$@"; do
+	# First we check if variables inserted are valid (variable name is valid if
+	# it starts with a letter or '_' and all remaining letters can only be an
+	# alphanumberic char or '-' or '_' ( we also check if the user inserted a wrong
+	# format like 'VARIABLE='
+	variablename="${variable%%=*}"
+	if (( $(expr match "${variablename}" '^[A-Z_a-z][_[:alnum:]-]*$') == 0 )) || 
+		[[ "${variable#${variable%?}}" = "=" ]]; then
+		echo "Invalid variable name for $variable"
+		exit 1
+	fi
+	if [[ "$variable" = "$variablename" ]]; then
+		# search for string in file and remove it
+		#echo "deleting $variablename (if exists)"
+		[[ ! -f "$DESTFILE" ]] && continue
+		sed -i "/$variablename=/ d" "$DESTFILE"
+	else
+		if [[ ! -f "$DESTFILE" ]]; then
+			#echo $DESTFILE
+			DESTDIR=$(dirname "$DESTFILE")
+			#echo $DESTDIR
+			if [[ ! -d "$DESTDIR" ]]; then
+				if ! mkdir $DESTDIR; then
+					die "Couldn't create directory: $DESTDIR"
+				fi
+			fi
+			# We put some text in there else sed doesn't work
+			echo "# $DESTFILE" > "$DESTFILE"
+		fi
+		if grep -q "^$variablename=" "$DESTFILE"; then
+			#echo "updating $variable"
+			#echo set -i "/^$variablename=/  s|^.*$|$variable|" "$DESTFILE"
+			sed -i "/^$variablename=/  s|^.*$|$variable|" "$DESTFILE"
+		else
+			#echo "adding $variable"
+			sed -i "1a\\$variable" "$DESTFILE"
+		fi
+	fi
+done
+
+if (( $( sed -n '$=' "$DESTFILE" ) == 1 )); then
+	rm -f "$DESTFILE"
+fi
+
+#echo -e "\n=== Content of $DESTFILE ===\n"
+#[[ -f $DESTFILE ]] && cat $DESTFILE || echo "File does not exists"
+[[ "$VERBOSE" = "true" ]] && set +o verbose
+exit 0 

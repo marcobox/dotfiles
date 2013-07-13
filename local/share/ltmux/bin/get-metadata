@@ -1,0 +1,82 @@
+#!/bin/bash
+CMDNAME="ltmux $(basename $0)"
+USAGESTRING="Usage ${USAGESTRING} [ -h | --help ] [ -w | --window ] [ -s | --session ] [ -t target ]  VARIABLE ]"
+function die {
+	echo "$@" 2>&1
+	echo "$USAGESTRING" 2>&1
+	exit 1
+}
+
+function showHelp {
+	echo -e "$USAGESTRING\n"
+	cat <<- EOF | column -t -s \&
+	& -h|--help & show this help
+	& -s|--session & get file name of session metadata of target
+	& -w|--window & get file name of window metadata of target
+	& -t|--target target & get metadata of target pane ( or window or session if -w or -s are used). If omitted it refers to current pane
+	EOF
+	exit
+}
+
+
+ARGUMENTS=$(getopt -o "hswt" -l "help,session,window,target" -n "$CMDNAME" -- "$@")
+eval set -- "$ARGUMENTS"
+
+TARGET=""
+WINOPT=""
+SESSOPT=""
+while [[ "$#" -gt "0" ]]; do
+	case $1 in
+		-h|--help)
+			showHelp
+			;;
+		-w|--window)
+			[[ -n "$SESSOPT" ]] && die "Can't use -w and -s at the same time"
+			WINOPT="-w"
+			shift
+			;;
+		-s|--session)
+			[[ -n "$WINOPT" ]] && die "Can't use -w and -s at the same time"
+			SESSOPT="-s"
+			shift
+			;;
+		-t|--target)
+			TARGET="-t $2"
+			shift 2
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			die "Bad input parameters"
+			;;
+	esac
+done
+
+DESTFILE=$(get-metadata-filename $WINOPT $SESSOPT $TARGET)
+(( $? == 0 )) || die "Bad input parameters"
+#DESTFILE="$HOME/test.txt"
+if [[ "$#" -eq "0" ]]; then
+	if [[ -f "$DESTFILE" ]]; then
+		sed -n "2,$ p" "$DESTFILE"
+	else
+		echo "Parameter list is empty"
+	fi
+	exit 0
+elif [[ "$#" -eq "1" ]]; then
+	variable="$1"
+	# First we check if variables inserted is valid (variable name is valid if
+	# it starts with a letter or '_' and all remaining letters can only be an
+	# alphanumberic char or '-' or '_' ( we also check if the user inserted a wrong
+	# format like 'VARIABLE='
+	if (( $(expr match "${variable}" '^[A-Z_a-z][_[:alnum:]-]*$') == 0 )); then 
+		die "Invalid variable name for $variable"
+	fi
+else
+	die "Too many parameters inserted"
+fi
+
+VARIABLE=$(grep -m 1 "^${variable}=" "$DESTFILE" )
+[[ -z "$VARIABLE" ]] && die "$variable does not exists"
+echo "${VARIABLE#*=}"

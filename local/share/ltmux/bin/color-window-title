@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# this check doesn't work if the program is launched by run-shell
+#[[ "$TERM" = "screen" ]] || exit 1
+# Remeber that our windows star from 1 as index and not 0 so the first
+# window will be blue
+
+COLOR_ARRAY=( "white" "blue" "yellow" "cyan" "red" "green" "magenta" )
+if (( $# == 0 )); then
+	WINNUM=$(${TMUXCMD} display -p "#I")
+	TARGET=$(${TMUXCMD} display -p "#S:#I")
+elif [[ "$1" = "-t" && "$#" -eq "2" ]]; then
+	TARGET=$(${TMUXCMD} display -t "$2" -p "#S:#I")
+	WINNUM=$(${TMUXCMD} display -t "$2" -p "#I")
+else
+	echo "Bad Parameters"
+	echo "Usage: ltmux $(basename $0) [ -t target-window ]"
+	exit 1
+fi
+
+
+COLOR_NUM=$(( WINNUM % ${#COLOR_ARRAY[@]} ))
+# Making it run in background because  suppressing output seems to 
+# make it hang if launched by shell
+NULL=$(${TMUXCMD} set -w -t $TARGET window-status-fg "${COLOR_ARRAY[$COLOR_NUM]}")
+# NULL is not really needed but it's the only way to suppress output
+# without blocking the command. In fact if we redirect the output to
+# /dev/null the command hangs indefinitely

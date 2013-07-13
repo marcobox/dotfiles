@@ -1,0 +1,49 @@
+#!/bin/bash
+
+VERBOSE=${VERBOSE:-"false"}
+
+function die {
+	echo "Bad Parametres" 2>&1
+	echo "Usage: ltmux $(basename $0) [ -d ][ -t target ]" 2>&1
+}
+
+[[ "$VERBOSE" = "true" ]] && set -o verbose
+DETACH=""
+if [[ "$1" = "-d" ]]; then
+	DETACH="-d"
+	shift
+fi
+if [[ "$#" -eq "0" ]]; then
+	TARGET=$(${TMUXCMD} display -p "#D")
+elif [[ "$#" -eq "2" && "$1" = "-t" ]]; then
+	TARGET=$(${TMUXCMD} display -t "$2" -p "#D")
+else
+	die
+fi
+
+OLD_LIST_PANES=$(get-metadata -t "$TARGET" "LIST_PANES")
+PANE_TARGET=$(get-metadata -t "$TARGET" "PANE_TARGET")
+LAYOUT=$(get-metadata -t "$TARGET" "LAYOUT")
+# If PANE_TARGET is negative means that our pane goes in position 0
+#echo "PANE_TARGET=$PANE_TARGET"
+if [[ "${PANE_TARGET:0:1}" = "-" ]]; then
+	PANE_TARGET=${PANE_TARGET:1}
+	NEGATIVE="true"
+fi
+NEW_LIST_PANES=$(${TMUXCMD} list-panes -t "$PANE_TARGET" | sed 's|^.*[[:blank:]]*\(%[[:digit:]]*\)[[:blank:]]*\((active)\)\{0,1\}$|\1|' | xargs)
+#echo "TARGET=$TARGET"
+#echo "OLD_LIST_PANES=$OLD_LIST_PANES"
+#echo "LAYOUT=$LAYOUT"
+#echo "NEW_LIST_PANES=$NEW_LIST_PANES"
+${TMUXCMD} join-pane -v -s "$TARGET" -t "$PANE_TARGET"
+if [[ "$NEGATIVE" = "true" ]] ; then
+	${TMUXCMD} swap-pane -t "$TARGET" -U
+fi
+if [[ "$OLD_LIST_PANES" = "$NEW_LIST_PANES" ]]; then
+	NULL=$(${TMUXCMD} select-layout -t "$TARGET" "$LAYOUT")
+fi
+# We also do some hacks to remove some screen errors
+${TMUXCMD} refresh-client
+set-metadata -t $TARGET "LIST_PANES" "PANE_TARGET" "LAYOUT"
+[[ "$VERBOSE" = "true" ]] && set +o verbose
+exit 0

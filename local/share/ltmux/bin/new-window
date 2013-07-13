@@ -1,0 +1,12 @@
+#!/bin/bash
+OUTPUT="false"
+for argument in "$@"; do
+	if [[ "$argument" = "-P" ]]; then
+		OUTPUT="true"
+	fi
+done
+
+NWIN=$(${TMUXCMD} new-window -P "$@")
+[[ "$OUTPUT" = "true" ]] && echo "$NWIN"
+#rm -f $(get-metadata-filename -t "${NWIN}")
+color-window-title -t "${NWIN}"

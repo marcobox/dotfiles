@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# We need to use this function to calculate the :+N and :-N targets because
+# "${TMUXCMD} display" shows the N° window that exists in current session  and not
+# the index where the window is effectively going to be moved
+function getTarget {
+	# We remove the panel reference (if exists) since it's useless for us
+	local TARGET="${1%.*}"
+	local WINREF="${TARGET#*:}"
+	local OPSYMBOL="${WINREF:0:1}"
+	if [[ "$OPSYMBOL" = "+" || "$OPSYMBOL" = "-" ]]; then
+		# Even if target may give a wrong winid number the session
+		# identifier is still valid
+		local SESSION=$(${TMUXCMD} display -t $TARGET -p "#S")
+		local CURRENTWIN=$(${TMUXCMD} display -p -t "${SESSION}:" "#I" )
+		# Remove the first simbol
+		WINREF="${WINREF:1}"
+		# if WINREF is empty then we add/sub the default value of 1
+		WINREF="${WINREF:-1}"
+		WINREF=$(( CURRENTWIN ${OPSYMBOL} WINREF ))
+		TARGET="$SESSION:$WINREF"
+	fi
+	echo "$TARGET"
+}
+
+ARGUMENTS="$@"
+while [[ "$#" -gt 0 ]]; do
+	case $1 in
+		-t)
+			DTARGET="$2"
+			shift 2
+			;;
+		-s)
+			STARGET="$2"
+			shift 2
+			;;
+		*)
+			shift
+			;;
+	esac
+done
+STARGET="${STARGET:-":"}"
+DTARGET="${DTARGET:-":"}"
+DTARGET=$(getTarget "$DTARGET")
+STARGET=$(getTarget "$STARGET")
+#echo "STARGET=$STARGET"
+#echo "DTARGET=$DTARGET"
+# We move the metadata of the moved windows
+OLD_METADATA=$(get-metadata-filename -w -t "$STARGET")
+${TMUXCMD} move-window $ARGUMENTS || exit 1
+if [[ -f "$OLD_METADATA" ]]; then
+	DEST_METADATA=$(get-metadata-filename -w -t "$DTARGET")
+	[[ -f "$DEST_METADATA" ]] && rm -f "$DEST_METADATA"
+	mv $OLD_METADATA $DEST_METADATA
+fi
+#echo "change $winindex -> $INDEX"
+# Do a not detached move only when the window we're processing is the current one
+# this avoid some screen flickering
+# We need to fix Windows Title color aswell
+color-window-title -t "$DTARGET"
+
+

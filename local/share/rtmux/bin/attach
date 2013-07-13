@@ -1,0 +1,75 @@
+#!/bin/bash
+VERBOSE=${VERBOSE:-"false"}
+CMDNAME="tmux $(basename $0)"
+USAGESTRING="Usage: $CMDNAME [ -h|--help ][ -D|--debug ][ -a|--ask ] target"
+
+[[ "$VERBOSE" = "true" ]] && set -o verbose
+
+function showHelp {
+	echo -e "$USAGESTRING\n"
+	cat <<- EOF | column -t -s '&'
+	& -h|--help & show this help and exit
+	& -a|--ask & show a list of active sessions and attach the one opened (NYI)
+	& -D|--debug & open in debug mode
+	EOF
+	exit 0
+}
+
+function die {
+	echo "$@" 2>&1
+	echo "$USAGESTRING" 2>&1
+	exit 1
+}
+
+ARGUMENTS=$(getopt -o "hDa" -l "help,debug,ask" -n "$CMDNAME" -- "$@")
+eval set -- "$ARGUMENTS"
+DEBUG=""
+while [[ "$#" -gt "0" ]]; do
+	case "$1" in
+		-h|--help)
+			showHelp
+			;;
+		-a|--ask)
+			shift
+			;;
+		-D|--debug)
+			DEBUG="-D"
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			die "Bad Arguments"
+	esac
+done
+
+[[ "$#" -ne "1" ]] && die "Missing target"
+
+if [[ -z "${1##*@*}" ]]; then
+	SHOSTNAME=${1##*@}
+	SESSION="${1%@*}"
+else
+	SHOSTNAME="$1"
+	SESSION="base"
+fi
+#echo "SESSION=$SESSION"
+#echo "SHOSTNAME=$SHOSTNAME"
+WINLIST=$(ssh "$SHOSTNAME" "/usr/local/bin/ltmux $DEBUG list-window -t $SESSION" | sed 's|^\([0-9]*\):.*$|\1|' | xargs)
+[[ -z "$WINLIST" ]] && die "Session not found"
+
+# TODO: Make it attach to the first avaiable session is no input session are asked.
+# Hostname is still mandatory now but we can try to set one as default for session
+# Make it possible to pass it the -t option to choose in which session (local) will be merged remote sessions
+# implement the -a option
+
+for window in $WINLIST; do
+	#echo "window=$window"
+	RTARGET="$SESSION:$window@$SHOSTNAME"
+	if ! tmux list-windows | awk '{ print $2}' | grep -q "^rtmux-$RTARGET$"; then
+		rtmux select-window "$DEBUG" -T "$RTARGET"
+	fi
+
+done
+[[ "$VERBOSE" = "true" ]] && set +o verbose

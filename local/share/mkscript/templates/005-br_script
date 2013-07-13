@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# The following script inherit
+# function die : print an error message and exit
+# function getConfValue : get $1 parameter value from $2 config file
+
+#$TARGETDIR : Directory of the target system
+#$BASEDIR : dir where out buildroot is builded
+#$BR_CONFILE : buildroot config file
+#$TARGET_ARCH : target architectur type
+#$KERNEL_PATH : path to the kernel direcroty
+
+source "../functions.sh"
+

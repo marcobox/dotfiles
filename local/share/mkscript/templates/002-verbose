@@ -1,0 +1,13 @@
+#!/bin/bash
+
+VERBOSE=${VERBOSE:-"false"}
+
+[[ "$VERBOSE" = "true" ]] && set -o verbose
+
+
+
+
+
+
+[[ "$VERBOSE" = "true" ]] && set +o verbose
+exit 0

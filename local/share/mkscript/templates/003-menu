@@ -1,0 +1,37 @@
+#!/bin/bash
+CMDNAME=$(basename $0)
+USAGESTRING="Usage: $CMDNAME [ -h|--help ]"
+
+function showHelp {
+	echo -e "$USAGESTRING\n"
+	cat <<- EOF | column -t -s '&'
+	& -h|--help & show this help and exit
+	EOF
+	exit 0
+}
+
+function die {
+	echo "$@" 1>&2
+	echo "$USAGESTRING" 1>&2
+	exit 1
+}
+
+ARGUMENTS=$(getopt -o "h" -l "help" -n "$CMDNAME" -- "$@")
+[[ "$?" != "0" ]] && exit 1
+eval set -- "$ARGUMENTS"
+while [[ "$#" -gt "0" ]]; do
+	case "$1" in
+		-h|--help)
+			showHelp
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			die "Bad Arguments"
+			;;
+	esac
+done
+
+

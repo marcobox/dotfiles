@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# We need to use this function to calculate the :+N and :-N targets because
+# "${TMUXCMD} display" shows the N° window that exists in current session  and not
+# the index where the window is effectively going to be moved
+ARGUMENTS="$@"
+while [[ "$#" -gt 0 ]]; do
+	case $1 in
+		-t)
+			DTARGET="$2"
+			shift 2
+			;;
+		-s)
+			STARGET="$2"
+			shift 2
+			;;
+		*)
+			shift
+			;;
+	esac
+done
+STARGET="${STARGET:-":"}"
+DTARGET="${DTARGET:-":"}"
+DTARGET=$(${TMUXCMD} display -t "$DTARGET" -p "#S:#I")
+STARGET=$(${TMUXCMD} display -t "$STARGET" -p "#S:#I")
+#echo "STARGET=$STARGET"
+#echo "DTARGET=$DTARGET"
+# We move the metadata of the moved windows
+SMETADATA=$(get-metadata-filename -w -t "$STARGET")
+DMETADATA=$(get-metadata-filename -w -t "$DTARGET")
+${TMUXCMD} swap-window $ARGUMENTS || exit 1
+# Swap metadata files if present
+if [[ -f "$SMETADATA" ]]; then
+	if [[ -f "$DMETADATA" ]]; then
+		mv "${DMETADATA}" "${DMETADATA}.tmp"
+		mv "${SMETADATA}" "${DMETADATA}"
+		mv "${DMETADATA}.tmp" "${SMETADATA}"
+	else
+		mv "${SMETADATA}" "${DMETADATA}"
+	fi
+elif [[ -f "$DMETADATA" ]]; then
+	mv "${DMETADATA}" "${SMETADATA}"
+fi
+#echo "change $winindex -> $INDEX"
+# Do a not detached move only when the window we're processing is the current one
+# this avoid some screen flickering
+# We need to fix Windows Title color aswell
+color-window-title -t "$DTARGET"
+color-window-title -t "$STARGET"

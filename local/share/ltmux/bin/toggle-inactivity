@@ -1,0 +1,36 @@
+#!/bin/bash
+
+WAIT_TIME=30
+
+function die {
+	echo "Wrong Parameters"
+	echo "Usage: ltmux $(basename $0) [ -t TARGET ][ interval ]"
+	exit 1
+}
+
+[[ "$#" -gt "3" ]] && die
+
+if [[ "$#" -gt "1" ]]; then
+	[[ "$1" != "-t" ]] && die
+	TARGET=$(${TMUXCMD} display -t $2 -p "#S:#I")
+	shift 2
+else
+	TARGET=$(${TMUXCMD} display -p "#S:#I")
+fi
+if [[ "$#" -eq "1" ]]; then
+	echo "$1" | grep -q '^[1-9][0-9]*$' || die
+	WAIT_TIME="$1"
+fi
+
+CWAIT_TIME=$(${TMUXCMD} show-options -t $TARGET -w | sed -n '/monitor-silence/ s|.*\<\([0-9]*\)$|\1|p' )
+if [[ -z "$CWAIT_TIME" ]]; then
+	SESSION=$(${TMUXCMD} display -t $TARGET -p "#S")
+	CWAIT_TIME=$(${TMUXCMD} show-options -t $SESSION -wg | sed -n '/monitor-silence/ s|.*\<\([0-9]*\)$|\1|p' )
+fi
+STATUS="activated ($WAIT_TIME sec)"
+if (( CWAIT_TIME != 0 )); then
+	WAIT_TIME=0
+	STATUS="deactivated"
+fi
+NULL=$(${TMUXCMD} set -t $TARGET -w monitor-silence $WAIT_TIME)
+${TMUXCMD} display-message "Monitoring of inactivity in window $(${TMUXCMD} display -t $TARGET -p "#I") $STATUS"
