@@ -1,0 +1,5 @@
+SudoEdit.vba: call delete('/home/marcobox/.vim/autoload/SudoEdit.vim')|call delete('/home/marcobox/.vim/doc/SudoEdit.txt')|call delete('/home/marcobox/.vim/plugin/SudoEdit.vim')
+SudoEdit-0.10.vmb: call delete('/home/marcobox/.vim/autoload/SudoEdit.vim')|call delete('/home/marcobox/.vim/doc/SudoEdit.txt')|call delete('/home/marcobox/.vim/plugin/SudoEdit.vim')
+fontsize-0.2.0.vba: call delete('/home/marcobox/.vim/plugin/fontsize.vim')|call delete('/home/marcobox/.vim/autoload/fontsize.vim')|call delete('/home/marcobox/.vim/doc/fontsize.txt')
+SudoEdit-0.12.vmb: call delete('/home/marcobox/.vim/autoload/SudoEdit.vim')|call delete('/home/marcobox/.vim/doc/SudoEdit.txt')|call delete('/home/marcobox/.vim/plugin/SudoEdit.vim')
+SudoEdit-0.18.vmb: call delete('/home/marcobox/.vim/autoload/SudoEdit.vim')|call delete('/home/marcobox/.vim/doc/SudoEdit.txt')|call delete('/home/marcobox/.vim/plugin/SudoEdit.vim')|call delete('/home/marcobox/.vim/autoload/sudo.cmd')

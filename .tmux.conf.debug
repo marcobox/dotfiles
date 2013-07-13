@@ -1,0 +1,117 @@
+#  ============== Server Options ==============
+
+# Set the time in milliseconds for which tmux waits after an escape is input to determine if it is
+# part of a function or meta key sequences.
+#set -s escape-time 1000
+
+# Attempt to set the terminal clipboard content using the \e]52;...\007 xterm(1) escape sequences.
+# This option is on by default if there is an Ms entry in the terminfo(5) description for the client
+# terminal.  Note that this feature needs to be enabled in xterm(1) by setting the resource:
+#
+#		disallowedWindowOps: 20,21,SetXprop
+#
+#Or changing this property from the xterm(1) interactive menu when required.
+set -s set-clipboard off
+
+# Set the number of buffers; as new buffers are added to the top of the stack, old ones are removed from the 
+# bottom if necessary to maintain this maximum length.
+set -s buffer-limit 1
+# If enabled, the server will exit when there are no attached clients.
+set -s exit-unattached off
+
+# ============== Session Options ==============
+
+# If enabled and the session is no longer attached to any clients, it is destroyed.
+set -g destroy-unattached off
+
+# If on, ring the terminal bell when an activity, content or silence alert occurs.
+set -g bell-on-alert off
+# Set the time in milliseconds for which the indicators shown by the display-panes command appear.
+#set -g display-panes-time 2000
+# Set the amount of time for which status line messages and other on-screen indicators are displayed.
+set -g display-time 3000
+# Set the maximum number of lines held in window history.
+set -g history-limit 0
+# Specify the default shell.  This is used as the login shell for new windows when the default-command option is
+# set to empty, and must be the full path of the executable.
+set -g default-shell "/bin/bash"
+# Set the default terminal for new windows created in this session - the default value of the TERM environment
+# variable.  For tmux to work correctly, this must be set to ‘screen’ or a derivative of it.
+# screen-it is a terminfo file present in $HOME/.terminfo that we created following tmux faq to fix the italic
+# problem with 'less' and 'vim'
+set -g default-terminal "screen-it"
+# Set status line message attributes
+#set -g message-attr bright
+#set -g message-fg white
+#set -g message-bg green
+set -g message-limit 30
+
+# -- Mouse Integration --
+
+#  If on, tmux captures the mouse and allows panes to be resized by dragging on their borders.
+set -g mouse-resize-pane off
+#  If on, tmux captures the mouse and when a window is split into multiple panes the mouse may be used
+# to select the current pane. The mouse click is also passed through to the application as normal.
+set -g mouse-select-pane off
+# If on, clicking the mouse on a window name in the status line will select that window
+set -g mouse-select-window off
+#  Mouse state in modes.  If on, the mouse may be used to copy a selection by dragging in copy mode, or to select
+# an option in choice mode
+set -wg mode-mouse off
+# If enabled, request mouse input as UTF-8 on UTF-8 terminals.
+set -g mouse-utf8 on
+
+# Attempt to set the window title using the \e]2;...\007 xterm code if the terminal appears to be an
+# xterm ( but it works on other terminalts too).
+set -g set-titles off
+
+# -- Alerts --
+
+# Set action on window bell.  any means a bell in any window linked to a session causes a bell in the current
+# window of that session, none means all bells are ignored and current means only bell in windows other than 
+# the current window are ignored.
+set -g bell-action none
+# If on, ring the terminal bell when an activity, content or silence alert occurs.
+set -g bell-on-alert off
+# If this option is on, a message is shown on a bell instead of it being passed through to the terminal (which
+# normally makes a sound). Also see the bell-action option
+set -g visual-bell off
+# If on, display a status line message when activity/silence/content occurs in a window for which the window
+# option is enabled.
+set -g visual-activity off
+set -g visual-content off
+set -g visual-silence off
+
+# -- Environment --
+set-environment -g TMUX_DIR "${HOME}/.tmux"
+#set-environment -g TMUX_BIN "${TMUX_DIR}/bin"
+
+set  -g status on
+# Update the status bar every interval seconds.
+set -g status-interval 20
+# Use vi or emacs-style key bindings in the status line, for example at the command prompt.
+set -g status-keys emacs
+
+# Instruct tmux to treat top-bit-set characters in the status-left and status-right strings as UTF-8;
+# notably, this is important for wide characters.
+set -g status-utf8 on
+
+# ================  Windows Options ================ 
+
+# Aggressively resize the chosen window.  This means that tmux will resize the window to the size of the smallest
+# session for which it is the current window, rather than the smallest session to which it is attached.  The
+# window may resize when the current window is changed on another sessions; this option is good for full-screen
+# programs which support SIGWINCH and poor for interactive programs such as shells.
+set -wg aggressive-resize off
+# When you open a text editor like nano in screen and then close it, the text may stay visible in your terminal.
+# With this command we fix that
+set -wg alternate-screen on
+#  Control automatic window renaming.  When this setting is enabled, tmux will attempt to rename the window to
+# reflect the command currently running in it.
+set -wg automatic-rename off
+# Instructs tmux to expect UTF-8 sequences to appear in this window.
+set -wg utf8 on
+# Set the width or height of the main (left or top) pane in the main-horizontal or main-vertical layouts
+#set -wg main-pane-height height
+#set -wg main-pane-width 115
+

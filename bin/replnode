@@ -1,0 +1,2 @@
+#!/bin/bash
+ltmux split -d -p 30 -P node

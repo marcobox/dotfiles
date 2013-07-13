@@ -162,20 +162,22 @@ shopt -s histappend
 
 # Make prompt informative
 # See:  http://www.ukuug.org/events/linux2003/papers/bash_tips/
-PS1="\[\033[0;34m\][\u@\h:\w]$\[\033[0m\]"
+#PS1="\[\033[0;34m\][\u@\h:\w]$\[\033[0m\]"
+if [ "$EUID" = 0 ]; then
+	PS1="${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\h\[\033[00m\]\[\033[01;34m\] \w \$ \[\033[00m\]"
+else
+	PS1="${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]\[\033[01;34m\] \w \$ \[\033[00m\]"
+fi
 
 ## -----------------------
 ## -- 2) Set up aliases --
 ## -----------------------
 
-# 2.1) Safety
-alias rm="rm -i"
-alias mv="mv -i"
-alias cp="cp -i"
 set -o noclobber
 
 # 2.2) Listing, directories, and motion
-alias ll="ls -alrtF --color"
+alias ls="ls --color"
+alias ll="ls -alrtF"
 alias la="ls -A"
 alias l="ls -CF"
 alias dir='ls --color=auto --format=vertical'
@@ -191,8 +193,8 @@ alias treeacl='tree -A -C -L 2'
 # 2.3) Text and editor commands
 alias em='emacs -nw'     # No X11 windows
 alias eqq='emacs -nw -Q' # No config and no X11
-export EDITOR='emacs -nw'
-export VISUAL='emacs -nw' 
+export EDITOR='vim'
+export VISUAL='vim' 
 
 # 2.4) grep options
 export GREP_OPTIONS='--color=auto'
