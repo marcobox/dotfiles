@@ -175,13 +175,19 @@ fi
 
 set -o noclobber
 
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    alias dir='ls --color=auto --format=vertical'
+    alias vdir='ls --color=auto --format=long'
+fi
+
+
 # 2.2) Listing, directories, and motion
-alias ls="ls --color"
 alias ll="ls -alrtF"
 alias la="ls -A"
 alias l="ls -CF"
-alias dir='ls --color=auto --format=vertical'
-alias vdir='ls --color=auto --format=long'
 alias m='less'
 alias ..='cd ..'
 alias ...='cd ..;cd ..'
@@ -227,6 +233,11 @@ fi
 
 ## Define any user-specific variables you want here.
 source ~/.bashrc_custom
-
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
+    . /etc/bash_completion
+fi
 ### Added by the Heroku Toolbelt
 export PATH="/usr/local/heroku/bin:$PATH"
