@@ -40,8 +40,8 @@ if has('mouse')
 endif
 " Force the use of max 8 colors only even in terminals (or GUI) that allows
 " more
-if &t_Co > 8 || has("gui_running")
-	set t_Co=8
+if &t_Co >= 8 || has("gui_running")
+	set t_Co=256
 endif
 
 " We select another color scheme that allow us to ready easier the scripts
@@ -220,7 +220,7 @@ if &term == "screen-it"
 	set <S-Up>=[1;2A
 	set <S-Down>=[1;2B
 	" Fixes the C-Left/Right/Up/Down mapping. Note: in our terminal it this fixes
-	" will still not work because we keybinded them to different key
+	" will still doesn't work because we keybinded them to different key
 	" sequences that are used by Tmux.
 	set <C-Left>=[1;5D
 	set <C-Right>=[1;5C
@@ -449,3 +449,8 @@ let g:slime_paste_file = "/tmp/.slime_paste"
 
 let g:syntastic_always_populate_loc_list=1
 
+set tabstop=5
+nmap <F5> :TagbarToggle<CR>
+
+" Change the way The + appears (needed because our terminal doesn support full UTF8
+let g:NERDTreeDirArrows=0

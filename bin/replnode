@@ -1,2 +1,2 @@
 #!/bin/bash
-ltmux split -d -p 30 -P 'node -e "require('"'repl'"').start({ignoreUndefined: true})"'
+ltmux split -d -h -p 30 -P 'node -e "require('"'repl'"').start({ignoreUndefined: true})"'
