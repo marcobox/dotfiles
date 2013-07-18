@@ -1,1 +1,1 @@
-export TERM="rxvt-unicode"
+export TERM="rxvt-unicode-256color"

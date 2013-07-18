@@ -14,8 +14,10 @@ set incsearch		" do incremental searching
 set modeline		" Allow the use of modeline
 set number		" Shows number of the tile to the left of the window
 set splitright		" New windows are opened to the right side instead of left
-set history=500		" Sets command line history to a longer history than
-			" default
+set history=500	" Sets command line history to a longer history than default
+set cursorline		" Show a line where is cursor is place
+set winwidth=79 	" Minimal number of columns for the current window. This is
+				" no and hard minimum
 
 " By default, pressing <TAB> in command mode will choose the first possible
 " completion with no indication of how many others there might be.
@@ -40,12 +42,18 @@ if has('mouse')
 endif
 " Force the use of max 8 colors only even in terminals (or GUI) that allows
 " more
-if &t_Co >= 8 || has("gui_running")
-	set t_Co=256
+
+"if &t_Co >= 87
+"	set t_Co=256
+"endif
+
+if &t_Co == 8
+	colorscheme elflord	
+else
+	colorscheme codeschool
 endif
 
 " We select another color scheme that allow us to ready easier the scripts
-colorscheme elflord
 "
 " Setting clipboard=unnamed will copy all selected text on system clipboard
 " If you don't want this feature but still be able to copy on clipboard when
