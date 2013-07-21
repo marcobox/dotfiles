@@ -1,3 +1,5 @@
+scriptencoding utf-8
+" ^^ Please leave the above line at the start of the file.
 "" When started as "evim", evim.vim will already have done these settings.
 if v:progname =~? "evim"
   finish
@@ -8,9 +10,13 @@ endif
 "else
 "  set backup		" keep a backup file
 "endif
+set nocompatible	" Use Vim defaults (much better!)
+set bs=2			" Allow backspacing everything in insert mode
+set autoindent		" Always set autoindent on
 set nobackup		" Do no make backup copy of the files
-set showcmd		" display incomplete commands
-set incsearch		" do incremental searching
+set ruler			" Show the cursor position all the time
+set showcmd		" Display incomplete commands
+set incsearch		" Do incremental searching
 set modeline		" Allow the use of modeline
 set number		" Shows number of the tile to the left of the window
 set splitright		" New windows are opened to the right side instead of left
@@ -18,6 +24,41 @@ set history=500	" Sets command line history to a longer history than default
 set cursorline		" Show a line where is cursor is place
 set winwidth=79 	" Minimal number of columns for the current window. This is
 				" no and hard minimum
+set hlsearch		" Enables search highlight by default
+
+" Tell vim to remember certain things when we exit
+"  '10  :  marks will be remembered for up to 10 previously edited files
+"  "100 :  will save up to 100 lines for each register
+"  :20  :  up to 20 lines of command-line history will be remembered
+"  %    :  saves and restores the buffer list
+"  n... :  where to save the viminfo files
+set viminfo='20,\"500,:100,%,n~/.viminfo
+
+" This function is used to remeber last position of a file. I saves it in a 
+" buffer that will be saved in viminfo files
+function! ResCur()
+	if line("'\"") <= line("$")
+		normal! g`"
+		return 1
+	endif
+endfunction
+
+augroup resCur
+	autocmd!
+	autocmd BufWinEnter * call ResCur()
+augroup END
+
+" When doing tab completion, give the following files lower priority. You may
+" wish to set 'wildignore' to completely ignore files, and 'wildmenu' to enable
+" enhanced tab completion. These can be done in the user vimrc file.
+set suffixes+=.info,.aux,.log,.dvi,.bbl,.out,.o,.lo
+
+" When displaying line numbers, don't use an annoyingly wide number column. This
+" doesn't enable line numbers -- :set number will do that. The value given is a
+" minimum width to use for the number column, not a fixed size.
+if v:version >= 700
+  set numberwidth=3
+endif
 
 " By default, pressing <TAB> in command mode will choose the first possible
 " completion with no indication of how many others there might be.
@@ -27,7 +68,6 @@ set wildmenu
 " the point of ambiguity (while still showing you what your options are), also
 " add the following:
 set wildmode=list:longest
-
 " Set leader char to <SPACE> that is much easier to use
 let mapleader="<SPACE>"
 
@@ -214,7 +254,7 @@ set pastetoggle=<F12>
 set titlestring=%t%(\ %M%)%(\ (%{expand(\"%:p:h\")})%)%(\ %a%)\ -\ %{v:servername}
 "autocmd BufEnter * let &titlestring = expand("%:t")
 "Fixes for Tmux
-if &term == "screen-it"
+if &term == "screen-it" || &term == "screen-256color"
 	" these 2 values fix some terminfo sequences that allow vim to change
 	" the title bar
 	set t_ts=]2
@@ -458,6 +498,7 @@ let g:slime_paste_file = "/tmp/.slime_paste"
 let g:syntastic_always_populate_loc_list=1
 
 set tabstop=5
+set shiftwidth=5
 nmap <F5> :TagbarToggle<CR>
 
 " Change the way The + appears (needed because our terminal doesn support full UTF8
