@@ -1,3 +1,7 @@
 [user]
 	name = MarcoBox
 	email = marcoboxdev@gmail.com
+[color]
+	ui = true
+	status = auto
+	branch = auto
