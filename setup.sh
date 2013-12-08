@@ -1,30 +1,27 @@
-DOTFILEDIR="dotfiles/"
+DOTFILEDIR="dotfiles"
 
 function lnDot {
 	[[ -n "${1}" ]] || return
+	DEST="${2:-$1}"
 	if [[ "${1:0:1}" = "." ]];then
 		SOURCEFILE="${DOTFILEDIR}/${1:1}"
 	else
 		SOURCEFILE="${DOTFILEDIR}/${1}"
 	fi
-	if [[ -L "${1}" ]]; then
-		ln -sf "${SOURCEFILE}" "${2}"
-	elif [[ -f "${1}" ]]; then
-		ln -sb "${SOURCEFILE}" "${2}"
-	elif [[ -d "${1}/" ]]; then
-		mv "${1}" "${1}~"
-		ln -sf "${SOURCEFILE}" "${2}"
+	if [[ -L "${DEST}" ]]; then
+		ln -sfn "${SOURCEFILE}" "${DEST}"
+	elif [[ -f "${DEST}" ]]; then
+		ln -sb "${SOURCEFILE}" "${DEST}"
+	elif [[ -d "${DEST}/" ]]; then
+		mv "${DEST}" "${DEST}~"
+		ln -sf "${SOURCEFILE}" "${DEST}"
 	else
-		ln -s "${SOURCEFILE}" "${2}"
+		ln -s "${SOURCEFILE}" "${DEST}"
 	fi
 }
 
 
-# git pull and install dotfiles as well
 cd "$HOME"
-if [[ -d "./${DOTFILEDIR}/" ]]; then
-    mv dotfiles dotfiles.old
-fi
 
 git --git-dir="${DOTFILEDIR}/.git" remote rm origin
 git --git-dir="${DOTFILEDIR}/.git" remote add origin git@github.com:marcobox/dotfiles.git
