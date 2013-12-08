@@ -36,7 +36,7 @@ lnDot .vimrc
 lnDot .vim
 lnDot .tmux
 lnDot .emacs.d
-lnDot .ssh
+lnDot .ssh/config
 lnDot .terminfo
 lnDot .gitconfig
 lnDot .jshintrc
