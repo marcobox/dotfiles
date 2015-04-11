@@ -1,0 +1,3 @@
+#!/bin/bash
+
+udo systemctl start tftpd.socket

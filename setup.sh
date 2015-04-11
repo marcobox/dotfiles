@@ -30,6 +30,7 @@ lnDot .screenrc
 lnDot .bash_profile
 lnDot .bashrc
 lnDot .bashrc_custom
+lnDot .bash_env
 lnDot .tmux.conf
 lnDot .tmux.conf.debug
 lnDot .vimrc

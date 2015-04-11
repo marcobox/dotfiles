@@ -1,4 +1,6 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhist_cnt =2
+let g:netrw_dirhist_cnt =4
 let g:netrw_dirhist_1='/home/ubuntu/.vim/bundle/jshint2.vim/ftplugin/javascript'
 let g:netrw_dirhist_2='/home/ubuntu/.tmux'
+let g:netrw_dirhist_3='/home/marcobox/.ssh'
+let g:netrw_dirhist_4='/srv/deluge/.config'

@@ -1,7 +1,18 @@
 Host github.com
 User git
-IdentityFile ~/.ssh/ubuntu_github.key
+IdentityFile ~/.ssh/github
+
+Host boxberry
+User marcobox
 
 Host *heroku*
 User git
-IdentityFile ~/.ssh/ubuntu_github.key
+IdentityFile ~/.ssh/github
+
+Host accessserver
+User marcobox
+hostname accessserver
+
+Host breakoutswitch
+User marcobox
+hostname breakoutswitch
