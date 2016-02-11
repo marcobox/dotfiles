@@ -163,11 +163,28 @@ shopt -s histappend
 # Make prompt informative
 # See:  http://www.ukuug.org/events/linux2003/papers/bash_tips/
 #PS1="\[\033[0;34m\][\u@\h:\w]$\[\033[0m\]"
-if [ "$EUID" = 0 ]; then
-	PS1="${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\h\[\033[00m\]\[\033[01;34m\] \w \$ \[\033[00m\]"
+case ${TERM} in
+        xterm*|rxvt*|Eterm*|aterm|kterm|gnome*|interix|konsole*)
+                PS1='\[\033]0;\u@\h:\w\007\]'
+                ;;
+        screen*)
+                PS1='\[\033k\u@\h:\w\033\\\]'
+                ;;
+        *)
+                unset PS1
+                ;;
+esac
+if [[ ${EUID} == 0 ]] ; then
+	PS1+='\[\033[01;31m\]\h\[\033[01;34m\] \W \$\[\033[00m\] '
 else
-	PS1="${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]\[\033[01;34m\] \w \$ \[\033[00m\]"
+	PS1+='\[\033[01;32m\]\u@\h\[\033[01;34m\] \w \$\[\033[00m\] '
 fi
+
+#if [ "$EUID" = 0 ]; then
+#	PS1="${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\h\[\033[00m\]\[\033[01;34m\] \w \$ \[\033[00m\]"
+#else
+#	PS1="${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]\[\033[01;34m\] \w \$ \[\033[00m\]"
+#fi
 
 ## -----------------------
 ## -- 2) Set up aliases --

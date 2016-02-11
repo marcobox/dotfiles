@@ -1,4 +1,4 @@
-export TERM="rxvt-unicode-256color"
+#export TERM="rxvt-unicode-256color"
 
 # Source the ~/.bash_env file used to store all your enviroment variables
 # shared by interactive and non-interactive shells
